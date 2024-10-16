@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import MenuItem from './components/MenuItem';
 
@@ -70,12 +70,16 @@ const SEGMENTS = 100;
 const INFLUENCE_RADIUS = 200;
 const INFLUENCE_STRENGTH = 0.5;
 
+const generateRandomPosition = () => {
+    return Math.floor(Math.random() * (75 - 25 + 1) + 25);
+};
+
 const generateControlPoints = (width: number, height: number, segments: number, seed: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i <= segments; i++) {
         const t = i / segments;
         const x = width * 0.5 + Math.sin(t * Math.PI * 2 + seed) * (width * 0.4);
-        const y = height * (1 - t);
+        const y = height * t;
         points.push({ x, y });
     }
     return points;
@@ -98,16 +102,16 @@ const applyMenuItemInfluence = (point: Point, menuItem: { x: number; y: number }
 interface StrandProps {
     width: number;
     height: number;
-    menuItem: { x: number; y: number };
+    menuItemY: number;
     delay: number;
     seed: number;
 }
 
-const Strand: React.FC<StrandProps> = ({ width, height, menuItem, delay, seed }) => {
+const Strand: React.FC<StrandProps> = ({ width, height, menuItemY, delay, seed }) => {
     const points = useMemo(() => {
         const basePoints = generateControlPoints(width, height, SEGMENTS, seed);
-        return basePoints.map(point => applyMenuItemInfluence(point, menuItem, INFLUENCE_STRENGTH));
-    }, [width, height, menuItem, seed]);
+        return basePoints.map(point => applyMenuItemInfluence(point, { x: width / 2, y: menuItemY }, INFLUENCE_STRENGTH));
+    }, [width, height, menuItemY, seed]);
 
     const path = useMemo(() => {
         return `M ${points[0].x} ${points[0].y} ` +
@@ -124,9 +128,20 @@ const Strand: React.FC<StrandProps> = ({ width, height, menuItem, delay, seed })
 
 const App: React.FC = () => {
     const menuItems = ['Games', 'Music', 'Movies', 'Memory', 'Settings'];
+    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const randomPositions = useMemo(() => menuItems.map(() => generateRandomPosition()), []);
 
-    const segmentWidth = window.innerWidth / menuItems.length;
-    const segmentHeight = window.innerHeight;
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const segmentWidth = windowSize.width / menuItems.length;
+    const segmentHeight = windowSize.height;
 
     return (
         <>
@@ -138,19 +153,24 @@ const App: React.FC = () => {
                             <Strand
                                 width={segmentWidth}
                                 height={segmentHeight}
-                                menuItem={{ x: segmentWidth / 2, y: segmentHeight - 100 }}
+                                menuItemY={(randomPositions[index] / 100) * segmentHeight}
                                 delay={index * 0.2}
                                 seed={index * 2}
                             />
                             <Strand
                                 width={segmentWidth}
                                 height={segmentHeight}
-                                menuItem={{ x: segmentWidth / 2, y: segmentHeight - 100 }}
+                                menuItemY={(randomPositions[index] / 100) * segmentHeight}
                                 delay={index * 0.2 + 0.1}
                                 seed={index * 2 + 1}
                             />
                         </StrandSVG>
-                        <MenuItem label={item} index={index} />
+                        <MenuItem
+                            label={item}
+                            index={index}
+                            randomPosition={randomPositions[index]}
+                            windowSize={windowSize}
+                        />
                     </SegmentContainer>
                 ))}
             </AppContainer>

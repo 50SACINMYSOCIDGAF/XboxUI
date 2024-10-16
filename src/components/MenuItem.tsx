@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 interface MenuItemProps {
     label: string;
     index: number;
+    randomPosition: number;
+    windowSize: { width: number; height: number };
 }
 
 const bobAnimation = keyframes`
@@ -21,39 +23,23 @@ const pulseAnimation = keyframes`
     50% { transform: scale(1.05); opacity: 0.9; }
 `;
 
-const ItemContainer = styled.div<{ index: number }>`
+const fadeInAnimation = keyframes`
+    from { opacity: 0; transform: translateY(20px) translateX(-50%); }
+    to { opacity: 1; transform: translateY(0) translateX(-50%); }
+`;
+
+const ItemContainer = styled.div<{ index: number; randomPosition: number; size: number }>`
     position: absolute;
     animation: ${bobAnimation} 4s ease-in-out infinite,
-               ${glowAnimation} 5s ease-in-out infinite;
-    animation-delay: ${props => props.index * 0.5}s, ${props => props.index * 0.7}s;
-    top: ${props => {
-    switch (props.index) {
-        case 0: return '25%';
-        case 1: return '15%';
-        case 2: return '45%';
-        case 3: return '30%';
-        case 4: return '60%';
-        default: return '50%';
-    }
-}};
-    left: ${props => {
-    switch (props.index) {
-        case 0: return '15%';
-        case 1: return '40%';
-        case 2: return '65%';
-        case 3: return '80%';
-        case 4: return '55%';
-        default: return '50%';
-    }
-}};
+    ${glowAnimation} 5s ease-in-out infinite,
+    ${fadeInAnimation} 1s ease-out;
+    animation-delay: ${props => props.index * 0.5}s, ${props => props.index * 0.7}s, ${props => props.index * 0.2}s;
+    top: ${props => props.randomPosition}%;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
-
-    @media (max-width: 768px) {
-        position: relative;
-        top: auto;
-        left: auto;
-        margin: 20px 0;
-    }
+    width: ${props => props.size}px;
+    height: ${props => props.size}px;
 `;
 
 const Strand = styled.div`
@@ -68,11 +54,12 @@ const Strand = styled.div`
 
 interface ItemBubbleProps {
     isHovered: boolean;
+    size: number;
 }
 
 const ItemBubble = styled.div<ItemBubbleProps>`
-    width: 150px;
-    height: 150px;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     background: radial-gradient(
             circle at center,
@@ -107,7 +94,7 @@ const ItemBubble = styled.div<ItemBubbleProps>`
 const ItemText = styled.span<ItemBubbleProps>`
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
-    font-size: 18px;
+    font-size: ${props => props.size * 0.12}px;
     text-transform: lowercase;
     letter-spacing: 1px;
     transition: all 0.3s ease;
@@ -115,18 +102,24 @@ const ItemText = styled.span<ItemBubbleProps>`
     opacity: ${props => props.isHovered ? 1 : 0.8};
 `;
 
-const MenuItem: React.FC<MenuItemProps> = ({ label, index }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ label, index, randomPosition, windowSize }) => {
     const [isHovered, setIsHovered] = useState(false);
 
+    const itemSize = useMemo(() => {
+        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.15;
+        return Math.max(baseSize, 100); // Ensure a minimum size of 100px
+    }, [windowSize]);
+
     return (
-        <ItemContainer index={index}>
+        <ItemContainer index={index} randomPosition={randomPosition} size={itemSize}>
             <Strand />
             <ItemBubble
                 isHovered={isHovered}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                size={itemSize}
             >
-                <ItemText isHovered={isHovered}>{label}</ItemText>
+                <ItemText isHovered={isHovered} size={itemSize}>{label}</ItemText>
             </ItemBubble>
         </ItemContainer>
     );
