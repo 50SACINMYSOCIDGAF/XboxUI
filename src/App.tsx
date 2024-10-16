@@ -133,17 +133,23 @@ const applyMenuItemInfluence = (point: Point, menuItem: { x: number; y: number }
 };
 
 const MobileGrid = styled.div`
-  display: none;
-
-  @media (max-width: 768px) {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
     width: 100%;
     height: 100%;
     position: absolute;
     top: 0;
     left: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 30;
+`;
+
+const DesktopLayout = styled.div`
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -214,6 +220,8 @@ const App: React.FC = () => {
     const segmentWidth = windowSize.width / menuItems.length;
     const segmentHeight = windowSize.height;
 
+    const isMobile = windowSize.width <= 768;
+
     return (
         <>
             <GlobalStyle />
@@ -223,52 +231,57 @@ const App: React.FC = () => {
                 <Particles />
                 <ScanLine />
                 <DigitalDistortion />
-                {/* Desktop layout */}
-                {menuItems.map((item, index) => (
-                    <SegmentContainer key={item.label}>
-                        <StrandSVG>
-                            <Strand
-                                width={segmentWidth}
-                                height={segmentHeight}
-                                menuItemY={(randomPositions[index] / 100) * segmentHeight}
-                                delay={index * 0.2}
-                                seed={index * 2}
-                            />
-                            <Strand
-                                width={segmentWidth}
-                                height={segmentHeight}
-                                menuItemY={(randomPositions[index] / 100) * segmentHeight}
-                                delay={index * 0.2 + 0.1}
-                                seed={index * 2 + 1}
-                            />
-                        </StrandSVG>
-                        <MenuItem
-                            label={item.label}
-                            link={item.link}
-                            index={index}
-                            randomPosition={randomPositions[index]}
-                            windowSize={windowSize}
-                            isLoaded={isLoaded}
-                        />
-                    </SegmentContainer>
-                ))}
-                <SelectButton windowSize={windowSize} />
 
-                {/* Mobile layout */}
-                <MobileGrid>
-                    {menuItems.map((item, index) => (
-                        <MenuItem
-                            key={item.label}
-                            label={item.label}
-                            link={item.link}
-                            index={index}
-                            randomPosition={50} // Center all items vertically
-                            windowSize={windowSize}
-                            isLoaded={isLoaded}
-                        />
-                    ))}
-                    <SelectButton windowSize={windowSize} />
-                </MobileGrid>
+                {!isMobile ? (
+                    // Desktop layout
+                    <>
+                        {menuItems.map((item, index) => (
+                            <SegmentContainer key={item.label}>
+                                <StrandSVG>
+                                    <Strand
+                                        width={segmentWidth}
+                                        height={segmentHeight}
+                                        menuItemY={(randomPositions[index] / 100) * segmentHeight}
+                                        delay={index * 0.2}
+                                        seed={index * 2}
+                                    />
+                                    <Strand
+                                        width={segmentWidth}
+                                        height={segmentHeight}
+                                        menuItemY={(randomPositions[index] / 100) * segmentHeight}
+                                        delay={index * 0.2 + 0.1}
+                                        seed={index * 2 + 1}
+                                    />
+                                </StrandSVG>
+                                <MenuItem
+                                    label={item.label}
+                                    link={item.link}
+                                    index={index}
+                                    randomPosition={randomPositions[index]}
+                                    windowSize={windowSize}
+                                    isLoaded={isLoaded}
+                                />
+                            </SegmentContainer>
+                        ))}
+                        <SelectButton windowSize={windowSize} />
+                    </>
+                ) : (
+                    // Mobile layout
+                    <MobileGrid>
+                        {menuItems.map((item, index) => (
+                            <MenuItem
+                                key={item.label}
+                                label={item.label}
+                                link={item.link}
+                                index={index}
+                                randomPosition={50} // Center all items vertically
+                                windowSize={windowSize}
+                                isLoaded={isLoaded}
+                            />
+                        ))}
+                        <SelectButton windowSize={windowSize} />
+                    </MobileGrid>
+                )}
             </AppContainer>
         </>
     );

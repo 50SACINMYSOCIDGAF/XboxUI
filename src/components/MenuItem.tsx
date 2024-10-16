@@ -62,8 +62,10 @@ const ItemContainer = styled.div<{ index: number; randomPosition: number; size: 
         display: flex;
         justify-content: center;
         align-items: center;
+        animation: none;
     }
 `;
+
 
 const Strand = styled.div`
     position: absolute;
@@ -109,8 +111,10 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     }
 
     @media (max-width: 768px) {
-        width: 80%;
-        height: 80%;
+        width: 90%;
+        height: 90%;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
+        inset 0 0 15px rgba(0, 255, 0, 0.5);
     }
 `;
 
@@ -128,7 +132,7 @@ const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
     animation: ${props => props.isTyping ? css`${typingAnimation} 1s steps(${props.children?.toString().length || 1}, end)` : 'none'};
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.16}px; // Slightly smaller on mobile devices
+        font-size: ${props => props.size * 0.16}px;
     }
 `;
 
@@ -151,6 +155,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
         return Math.max(baseSize, 120);
     }, [windowSize]);
 
+    useMemo(() => {
+        return Math.min(windowSize.width, windowSize.height) * 0.15; // Reduced size for mobile
+    }, [windowSize]);
 
     useEffect(() => {
         if (isLoaded) {
@@ -173,7 +180,11 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
                 size={itemSize}
             >
                 <ItemLink href={link} target="_blank" rel="noopener noreferrer">
-                    <ItemText isHovered={isHovered} size={itemSize} isTyping={isTyping}>
+                    <ItemText
+                        isHovered={isHovered}
+                        size={itemSize}
+                        isTyping={isTyping}
+                    >
                         {label}
                     </ItemText>
                 </ItemLink>

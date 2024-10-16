@@ -70,8 +70,8 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
     }
 
     @media (max-width: 768px) {
-        width: 80%;
-        height: 80%;
+        width: 90%;
+        height: 90%;
     }
 `;
 
@@ -94,6 +94,11 @@ const SelectText = styled.span<{ size: number }>`
     text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
     text-align: center;
     line-height: 1.2;
+
+    @media (max-width: 768px) {
+        font-size: ${props => props.size * 0.14}px; // Reduced font size for mobile
+    }
+    
 `;
 
 const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
