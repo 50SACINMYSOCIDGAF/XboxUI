@@ -136,17 +136,19 @@ const MobileGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 15px;
-    width: 85%;
-    max-width: 350px;
+    gap: 20px;
+    width: 90%;
+    max-width: 400px;
     aspect-ratio: 2 / 3;
     position: absolute;
-    top: 55%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 15px;
+    padding: 20px;
     box-sizing: border-box;
     z-index: 30;
+    justify-items: center;
+    align-items: center;
 `;
 
 const MobileStrandContainer = styled.div`
@@ -238,8 +240,10 @@ const App: React.FC = () => {
     const segmentHeight = windowSize.height;
 
     const isMobile = windowSize.width <= 768;
+
     const mobileItemSize = useMemo(() => {
-        return Math.min(windowSize.width, windowSize.height) * 0.20; // Adjust this value as needed, changed to 0.2
+        // Increase the multiplier for mobile devices
+        return Math.min(windowSize.width, windowSize.height) * 0.3; // Changed from 0.15 to 0.3
     }, [windowSize]);
 
     return (

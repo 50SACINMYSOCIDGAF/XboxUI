@@ -27,11 +27,14 @@ const SelectContainer = styled.div<{ size: number }>`
         position: relative;
         bottom: auto;
         right: auto;
-        width: 100%;
-        height: 100%;
+        width: ${props => props.size * 3}px;
+        height: ${props => props.size * 3}px;
         display: flex;
         justify-content: center;
         align-items: center;
+        /* iOS inflation fix */
+        transform: scale(1);
+        -webkit-transform: scale(1);
     }
 `;
 
@@ -73,8 +76,11 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
     @media (max-width: 768px) {
         width: 100%;
         height: 100%;
-        box-shadow: 0 0 10px rgba(0, 255, 0, 0.4),
-        inset 0 0 10px rgba(0, 255, 0, 0.4);
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
+        inset 0 0 15px rgba(0, 255, 0, 0.5);
+        /* iOS inflation fix */
+        transform: scale(1);
+        -webkit-transform: scale(1);
     }
 `;
 
@@ -99,7 +105,7 @@ const SelectText = styled.span<{ size: number }>`
     line-height: 1.2;
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size}px; // Increased from 0.25 to 0.3
+        font-size: ${props => props.size * 0.3}px; // Increased from 0.12 to 0.3
     }
 `;
 
@@ -108,7 +114,7 @@ const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
 
     const buttonSize = useMemo(() => {
         if (windowSize.width <= 768) {
-            return Math.min(windowSize.width, windowSize.height) * 0.15; // Consistent with MenuItem size
+            return Math.min(windowSize.width, windowSize.height) * 0.3; // Consistent with App.tsx and MenuItem.tsx
         }
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.1;
         return Math.max(baseSize, 80);

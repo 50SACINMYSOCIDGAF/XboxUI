@@ -57,12 +57,15 @@ const ItemContainer = styled.div<{ index: number; randomPosition: number; size: 
         left: auto;
         top: auto;
         transform: none;
-        width: 100%;
-        height: 100%;
+        width: ${props => props.size * 3}px;
+        height: ${props => props.size * 3}px;
         display: flex;
         justify-content: center;
         align-items: center;
         animation: none;
+        /* iOS inflation fix */
+        transform: scale(1);
+        -webkit-transform: scale(1);
     }
 `;
 
@@ -113,8 +116,11 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     @media (max-width: 768px) {
         width: 100%;
         height: 100%;
-        box-shadow: 0 0 10px rgba(0, 255, 0, 0.4),
-        inset 0 0 10px rgba(0, 255, 0, 0.4);
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
+        inset 0 0 15px rgba(0, 255, 0, 0.5);
+        /* iOS inflation fix */
+        transform: scale(1);
+        -webkit-transform: scale(1);
     }
 `;
 
@@ -132,7 +138,7 @@ const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
     animation: ${props => props.isTyping ? css`${typingAnimation} 1s steps(${props.children?.toString().length || 1}, end)` : 'none'};
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size}px;
+        font-size: ${props => props.size * 0.3}px; // Increased from 0.18 to 0.3
     }
 `;
 
@@ -152,7 +158,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
 
     const itemSize = useMemo(() => {
         if (windowSize.width <= 768) {
-            return Math.min(windowSize.width, windowSize.height) * 0.15; // Further reduced size for mobile
+            return Math.min(windowSize.width, windowSize.height) * 0.3; // Consistent with App.tsx
         }
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18;
         return Math.max(baseSize, 120);
