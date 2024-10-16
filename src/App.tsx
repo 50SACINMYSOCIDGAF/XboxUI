@@ -2,6 +2,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import MenuItem from './components/MenuItem';
 import SelectButton from './components/SelectButton';
+import Particles from './components/Particles';
+import ScanLine from './components/ScanLine';
+import DigitalDistortion from './components/DigitalDistortion';
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -23,12 +26,41 @@ const backgroundPulse = keyframes`
 const AppContainer = styled.div`
     width: 100vw;
     height: 100vh;
-    background-image: radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 70%);
+    background-image:
+            radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 70%),
+            linear-gradient(0deg, rgba(0, 50, 0, 0.2) 0%, transparent 100%);
     animation: ${backgroundPulse} 8s ease-in-out infinite;
     display: flex;
     justify-content: space-around;
     align-items: flex-end;
     overflow: hidden;
+    position: relative;
+`;
+
+const GridOverlay = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+            linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+`;
+
+const CentralOrb = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(0, 255, 0, 0.7) 0%, rgba(0, 255, 0, 0) 70%);
+    animation: ${backgroundPulse} 4s ease-in-out infinite;
+    pointer-events: none;
 `;
 
 const SegmentContainer = styled.div`
@@ -171,6 +203,11 @@ const App: React.FC = () => {
         <>
             <GlobalStyle />
             <AppContainer>
+                <GridOverlay />
+                <CentralOrb />
+                <Particles />
+                <ScanLine />
+                <DigitalDistortion />
                 {menuItems.map((item, index) => (
                     <SegmentContainer key={item.label}>
                         <StrandSVG>

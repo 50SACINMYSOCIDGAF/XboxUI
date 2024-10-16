@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 interface MenuItemProps {
@@ -11,13 +11,13 @@ interface MenuItemProps {
 }
 
 const bobAnimation = keyframes`
-    0%, 100% { transform: translateY(0) translateX(-50%); }
-    50% { transform: translateY(-3px) translateX(-50%); }
+    0%, 100% { transform: translateY(0) translateX(-50%) rotate(0deg); }
+    50% { transform: translateY(-3px) translateX(-50%) rotate(2deg); }
 `;
 
 const glowAnimation = keyframes`
-    0%, 100% { filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7)); }
-    50% { filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.9)); }
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 255, 0, 0.8)); }
+    50% { filter: drop-shadow(0 0 25px rgba(0, 255, 0, 1)); }
 `;
 
 const pulseAnimation = keyframes`
@@ -26,8 +26,13 @@ const pulseAnimation = keyframes`
 `;
 
 const fadeInAnimation = keyframes`
-    from { opacity: 0; transform: translateY(20px) translateX(-50%); }
-    to { opacity: 1; transform: translateY(0) translateX(-50%); }
+    from { opacity: 0; transform: translateY(20px) translateX(-50%) scale(0.8); }
+    to { opacity: 1; transform: translateY(0) translateX(-50%) scale(1); }
+`;
+
+const typingAnimation = keyframes`
+    from { width: 0; }
+    to { width: 100%; }
 `;
 
 const ItemContainer = styled.div<{ index: number; randomPosition: number; size: number; isLoaded: boolean }>`
@@ -69,43 +74,45 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     border-radius: 50%;
     background: radial-gradient(
             circle at center,
-            rgba(0, 255, 0, 0.1) 0%,
-            rgba(0, 255, 0, 0.2) 50%,
-            rgba(0, 255, 0, 0.4) 80%,
-            rgba(0, 255, 0, 0.6) 100%
+            rgba(0, 255, 0, 0.2) 0%,
+            rgba(0, 255, 0, 0.3) 50%,
+            rgba(0, 255, 0, 0.5) 80%,
+            rgba(0, 255, 0, 0.7) 100%
     );
     border: 2px solid rgba(0, 255, 0, 0.8);
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, transform 0.5s ease;
     cursor: pointer;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5),
-    inset 0 0 20px rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.7),
+    inset 0 0 30px rgba(0, 255, 0, 0.7);
     animation: ${pulseAnimation} 3s ease-in-out infinite;
+    padding: 10px; // Added padding to accommodate larger text
 
     &:hover {
-        background: radial-gradient(
-                circle at center,
-                rgba(0, 255, 0, 0.2) 0%,
-                rgba(0, 255, 0, 0.3) 50%,
-                rgba(0, 255, 0, 0.5) 80%,
-                rgba(0, 255, 0, 0.7) 100%
-        );
-        box-shadow: 0 0 30px rgba(0, 255, 0, 0.7),
-        inset 0 0 30px rgba(0, 255, 0, 0.7);
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 0 50px rgba(0, 255, 0, 0.9),
+        inset 0 0 50px rgba(0, 255, 0, 0.9);
     }
 `;
 
-const ItemText = styled.span<ItemBubbleProps>`
+const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
-    font-size: ${props => props.size * 0.12}px;
+    font-size: ${props => props.size * 0.18}px; // Increased from 0.12 to 0.18
     text-transform: lowercase;
     letter-spacing: 1px;
     transition: all 0.3s ease;
     text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
     opacity: ${props => props.isHovered ? 1 : 0.8};
+    overflow: hidden;
+    white-space: nowrap;
+    animation: ${props => props.isTyping ? css`${typingAnimation} 1s steps(${props.children?.toString().length || 1}, end)` : 'none'};
+
+    @media (max-width: 768px) {
+        font-size: ${props => props.size * 0.16}px; // Slightly smaller on mobile devices
+    }
 `;
 
 const ItemLink = styled.a`
@@ -120,11 +127,20 @@ const ItemLink = styled.a`
 
 const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition, windowSize, isLoaded }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
 
     const itemSize = useMemo(() => {
-        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.15;
-        return Math.max(baseSize, 100); // Ensure a minimum size of 100px
+        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18; // Increased from 0.15 to 0.18
+        return Math.max(baseSize, 120); // Increased minimum size from 100px to 120px
     }, [windowSize]);
+
+
+    useEffect(() => {
+        if (isLoaded) {
+            const typingTimeout = setTimeout(() => setIsTyping(true), index * 500);
+            return () => clearTimeout(typingTimeout);
+        }
+    }, [isLoaded, index]);
 
     return (
         <ItemContainer
@@ -141,7 +157,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
                 size={itemSize}
             >
                 <ItemLink href={link} target="_blank" rel="noopener noreferrer">
-                    <ItemText isHovered={isHovered} size={itemSize}>{label}</ItemText>
+                    <ItemText isHovered={isHovered} size={itemSize} isTyping={isTyping}>
+                        {label}
+                    </ItemText>
                 </ItemLink>
             </ItemBubble>
         </ItemContainer>
