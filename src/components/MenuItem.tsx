@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 
 interface MenuItemProps {
     label: string;
+    link: string;
     index: number;
     randomPosition: number;
     windowSize: { width: number; height: number };
+    isLoaded: boolean;
 }
 
 const bobAnimation = keyframes`
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+    0%, 100% { transform: translateY(0) translateX(-50%); }
+    50% { transform: translateY(-3px) translateX(-50%); }
 `;
 
 const glowAnimation = keyframes`
@@ -28,18 +30,22 @@ const fadeInAnimation = keyframes`
     to { opacity: 1; transform: translateY(0) translateX(-50%); }
 `;
 
-const ItemContainer = styled.div<{ index: number; randomPosition: number; size: number }>`
+const ItemContainer = styled.div<{ index: number; randomPosition: number; size: number; isLoaded: boolean }>`
     position: absolute;
-    animation: ${bobAnimation} 4s ease-in-out infinite,
-    ${glowAnimation} 5s ease-in-out infinite,
-    ${fadeInAnimation} 1s ease-out;
-    animation-delay: ${props => props.index * 0.5}s, ${props => props.index * 0.7}s, ${props => props.index * 0.2}s;
-    top: ${props => props.randomPosition}%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
     width: ${props => props.size}px;
     height: ${props => props.size}px;
+    transition: top 1s ease-out;
+    top: ${props => props.isLoaded ? `${props.randomPosition}%` : '50%'};
+
+    animation: ${props => props.isLoaded ? css`
+        ${bobAnimation} 4s ease-in-out infinite,
+        ${glowAnimation} 5s ease-in-out infinite,
+        ${fadeInAnimation} 1s ease-out
+    ` : 'none'};
+    animation-delay: ${props => `${props.index * 0.5}s, ${props.index * 0.7}s, ${props.index * 0.2}s`};
 `;
 
 const Strand = styled.div`
@@ -102,7 +108,17 @@ const ItemText = styled.span<ItemBubbleProps>`
     opacity: ${props => props.isHovered ? 1 : 0.8};
 `;
 
-const MenuItem: React.FC<MenuItemProps> = ({ label, index, randomPosition, windowSize }) => {
+const ItemLink = styled.a`
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition, windowSize, isLoaded }) => {
     const [isHovered, setIsHovered] = useState(false);
 
     const itemSize = useMemo(() => {
@@ -111,7 +127,12 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, index, randomPosition, windo
     }, [windowSize]);
 
     return (
-        <ItemContainer index={index} randomPosition={randomPosition} size={itemSize}>
+        <ItemContainer
+            index={index}
+            randomPosition={randomPosition}
+            size={itemSize}
+            isLoaded={isLoaded}
+        >
             <Strand />
             <ItemBubble
                 isHovered={isHovered}
@@ -119,7 +140,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, index, randomPosition, windo
                 onMouseLeave={() => setIsHovered(false)}
                 size={itemSize}
             >
-                <ItemText isHovered={isHovered} size={itemSize}>{label}</ItemText>
+                <ItemLink href={link} target="_blank" rel="noopener noreferrer">
+                    <ItemText isHovered={isHovered} size={itemSize}>{label}</ItemText>
+                </ItemLink>
             </ItemBubble>
         </ItemContainer>
     );

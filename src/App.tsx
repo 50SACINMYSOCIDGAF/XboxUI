@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import MenuItem from './components/MenuItem';
+import SelectButton from './components/SelectButton';
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -126,10 +127,26 @@ const Strand: React.FC<StrandProps> = ({ width, height, menuItemY, delay, seed }
     return <StrandPath d={path} delay={delay} />;
 };
 
+interface MenuItemData {
+    label: string;
+    link: string;
+}
+
 const App: React.FC = () => {
-    const menuItems = ['Games', 'Music', 'Movies', 'Memory', 'Settings'];
+    const menuItems: MenuItemData[] = [
+        { label: 'GitHub', link: 'https://github.com/50SACINMYSOCIDGAF' },
+        { label: 'Email', link: 'mailto:contact@noah.jp.net' },
+        { label: 'Blog', link: 'https://medium.com/@noah_44244' },
+        { label: 'Discord', link: 'https://discordlookup.com/user/1106369952501481534' },
+        { label: 'Portfolio', link: 'https://noah.jp.net/portfolio/' }
+    ];
+
     const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-    const randomPositions = useMemo(() => menuItems.map(() => generateRandomPosition()), []);
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const randomPositions = useMemo(() => {
+        return menuItems.map(() => generateRandomPosition());
+    }, []);
 
     useEffect(() => {
         const handleResize = () => {
@@ -137,7 +154,14 @@ const App: React.FC = () => {
         };
 
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+
+        // Set isLoaded to true after a short delay to trigger animations
+        const loadTimer = setTimeout(() => setIsLoaded(true), 100);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(loadTimer);
+        };
     }, []);
 
     const segmentWidth = windowSize.width / menuItems.length;
@@ -148,7 +172,7 @@ const App: React.FC = () => {
             <GlobalStyle />
             <AppContainer>
                 {menuItems.map((item, index) => (
-                    <SegmentContainer key={item}>
+                    <SegmentContainer key={item.label}>
                         <StrandSVG>
                             <Strand
                                 width={segmentWidth}
@@ -166,13 +190,16 @@ const App: React.FC = () => {
                             />
                         </StrandSVG>
                         <MenuItem
-                            label={item}
+                            label={item.label}
+                            link={item.link}
                             index={index}
                             randomPosition={randomPositions[index]}
                             windowSize={windowSize}
+                            isLoaded={isLoaded}
                         />
                     </SegmentContainer>
                 ))}
+                <SelectButton windowSize={windowSize} />
             </AppContainer>
         </>
     );
