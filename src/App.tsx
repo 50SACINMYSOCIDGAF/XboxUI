@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import MenuItem from './components/MenuItem';
-
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -10,74 +9,150 @@ const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         font-family: 'Orbitron', sans-serif;
-        background-color: #000800;
+        background-color: #001200;
         overflow: hidden;
     }
 `;
 
 const backgroundPulse = keyframes`
-    0%, 100% { background-color: #000800; }
-    50% { background-color: #001200; }
+    0%, 100% { background-color: #001200; }
+    50% { background-color: #002200; }
 `;
 
 const AppContainer = styled.div`
     width: 100vw;
     height: 100vh;
-    background-image: radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 50%);
+    background-image: radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 70%);
+    animation: ${backgroundPulse} 8s ease-in-out infinite;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: space-around;
+    align-items: flex-end;
     overflow: hidden;
-    animation: ${backgroundPulse} 10s ease-in-out infinite;
+`;
+
+const SegmentContainer = styled.div`
     position: relative;
+    width: 20%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
 `;
 
-const curveAnimation = keyframes`
-    0% { transform: translateY(-50%) rotate(0deg); }
-    100% { transform: translateY(-50%) rotate(360deg); }
+const strandPulse = keyframes`
+    0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
+    50% { opacity: 0.5; filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7)); }
 `;
 
-const CurvedLine = styled.div<{ delay: number; reverse?: boolean }>`
+const StrandSVG = styled.svg`
     position: absolute;
-    top: 50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    border: 1px solid rgba(0, 255, 0, 0.1);
-    border-radius: 50%;
-    animation: ${curveAnimation} ${props => props.reverse ? '40s' : '30s'} linear infinite;
-    animation-delay: ${props => props.delay}s;
-    animation-direction: ${props => props.reverse ? 'reverse' : 'normal'};
-`;
-
-const MenuContainer = styled.div`
-    position: relative;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-
-    @media (max-width: 768px) {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
 `;
 
+const StrandPath = styled.path<{ delay: number }>`
+    fill: none;
+    stroke: rgba(0, 255, 0, 0.4);
+    stroke-width: 2px;
+    animation: ${strandPulse} ${props => 4 + props.delay}s ease-in-out infinite;
+    animation-delay: ${props => props.delay}s;
+`;
+
+interface Point {
+    x: number;
+    y: number;
+}
+
+const SEGMENTS = 100;
+const INFLUENCE_RADIUS = 200;
+const INFLUENCE_STRENGTH = 0.5;
+
+const generateControlPoints = (width: number, height: number, segments: number, seed: number): Point[] => {
+    const points: Point[] = [];
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const x = width * 0.5 + Math.sin(t * Math.PI * 2 + seed) * (width * 0.4);
+        const y = height * (1 - t);
+        points.push({ x, y });
+    }
+    return points;
+};
+
+const applyMenuItemInfluence = (point: Point, menuItem: { x: number; y: number }, strength: number): Point => {
+    const dx = menuItem.x - point.x;
+    const dy = menuItem.y - point.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < INFLUENCE_RADIUS) {
+        const influence = Math.pow((INFLUENCE_RADIUS - distance) / INFLUENCE_RADIUS, 2) * strength;
+        return {
+            x: point.x + dx * influence,
+            y: point.y + dy * influence
+        };
+    }
+    return point;
+};
+
+interface StrandProps {
+    width: number;
+    height: number;
+    menuItem: { x: number; y: number };
+    delay: number;
+    seed: number;
+}
+
+const Strand: React.FC<StrandProps> = ({ width, height, menuItem, delay, seed }) => {
+    const points = useMemo(() => {
+        const basePoints = generateControlPoints(width, height, SEGMENTS, seed);
+        return basePoints.map(point => applyMenuItemInfluence(point, menuItem, INFLUENCE_STRENGTH));
+    }, [width, height, menuItem, seed]);
+
+    const path = useMemo(() => {
+        return `M ${points[0].x} ${points[0].y} ` +
+            points.slice(1).map((point, index) => {
+                const prevPoint = points[index];
+                const midX = (prevPoint.x + point.x) / 2;
+                const midY = (prevPoint.y + point.y) / 2;
+                return `Q ${prevPoint.x} ${prevPoint.y} ${midX} ${midY}`;
+            }).join(' ');
+    }, [points]);
+
+    return <StrandPath d={path} delay={delay} />;
+};
+
 const App: React.FC = () => {
-    const menuItems = ['Portfolio', 'Github', 'Discord', 'Blog', 'Contact'];
+    const menuItems = ['Games', 'Music', 'Movies', 'Memory', 'Settings'];
+
+    const segmentWidth = window.innerWidth / menuItems.length;
+    const segmentHeight = window.innerHeight;
 
     return (
         <>
             <GlobalStyle />
             <AppContainer>
-                {[...Array(5)].map((_, index) => (
-                    <CurvedLine key={index} delay={index * -2} reverse={index % 2 === 0} />
+                {menuItems.map((item, index) => (
+                    <SegmentContainer key={item}>
+                        <StrandSVG>
+                            <Strand
+                                width={segmentWidth}
+                                height={segmentHeight}
+                                menuItem={{ x: segmentWidth / 2, y: segmentHeight - 100 }}
+                                delay={index * 0.2}
+                                seed={index * 2}
+                            />
+                            <Strand
+                                width={segmentWidth}
+                                height={segmentHeight}
+                                menuItem={{ x: segmentWidth / 2, y: segmentHeight - 100 }}
+                                delay={index * 0.2 + 0.1}
+                                seed={index * 2 + 1}
+                            />
+                        </StrandSVG>
+                        <MenuItem label={item} index={index} />
+                    </SegmentContainer>
                 ))}
-                <MenuContainer>
-                    {menuItems.map((item, index) => (
-                        <MenuItem key={item} label={item} index={index} />
-                    ))}
-                </MenuContainer>
             </AppContainer>
         </>
     );
