@@ -22,6 +22,17 @@ const SelectContainer = styled.div<{ size: number }>`
     width: ${props => props.size}px;
     height: ${props => props.size}px;
     z-index: 20;
+
+    @media (max-width: 768px) {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 `;
 
 const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
@@ -57,6 +68,11 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
         box-shadow: 0 0 30px rgba(0, 255, 0, 0.7),
         inset 0 0 30px rgba(0, 255, 0, 0.7);
     }
+
+    @media (max-width: 768px) {
+        width: 80%;
+        height: 80%;
+    }
 `;
 
 const SelectLink = styled.a`
@@ -85,7 +101,7 @@ const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
 
     const buttonSize = useMemo(() => {
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.1;
-        return Math.max(baseSize, 80); // Ensure a minimum size of 80px
+        return Math.max(baseSize, 80);
     }, [windowSize]);
 
     return (

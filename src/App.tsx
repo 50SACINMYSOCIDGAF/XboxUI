@@ -132,6 +132,21 @@ const applyMenuItemInfluence = (point: Point, menuItem: { x: number; y: number }
     return point;
 };
 
+const MobileGrid = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+`;
+
 interface StrandProps {
     width: number;
     height: number;
@@ -208,6 +223,7 @@ const App: React.FC = () => {
                 <Particles />
                 <ScanLine />
                 <DigitalDistortion />
+                {/* Desktop layout */}
                 {menuItems.map((item, index) => (
                     <SegmentContainer key={item.label}>
                         <StrandSVG>
@@ -237,6 +253,22 @@ const App: React.FC = () => {
                     </SegmentContainer>
                 ))}
                 <SelectButton windowSize={windowSize} />
+
+                {/* Mobile layout */}
+                <MobileGrid>
+                    {menuItems.map((item, index) => (
+                        <MenuItem
+                            key={item.label}
+                            label={item.label}
+                            link={item.link}
+                            index={index}
+                            randomPosition={50} // Center all items vertically
+                            windowSize={windowSize}
+                            isLoaded={isLoaded}
+                        />
+                    ))}
+                    <SelectButton windowSize={windowSize} />
+                </MobileGrid>
             </AppContainer>
         </>
     );

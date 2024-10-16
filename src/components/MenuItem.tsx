@@ -51,6 +51,18 @@ const ItemContainer = styled.div<{ index: number; randomPosition: number; size: 
         ${fadeInAnimation} 1s ease-out
     ` : 'none'};
     animation-delay: ${props => `${props.index * 0.5}s, ${props.index * 0.7}s, ${props.index * 0.2}s`};
+
+    @media (max-width: 768px) {
+        position: relative;
+        left: auto;
+        top: auto;
+        transform: none;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 `;
 
 const Strand = styled.div`
@@ -95,6 +107,11 @@ const ItemBubble = styled.div<ItemBubbleProps>`
         box-shadow: 0 0 50px rgba(0, 255, 0, 0.9),
         inset 0 0 50px rgba(0, 255, 0, 0.9);
     }
+
+    @media (max-width: 768px) {
+        width: 80%;
+        height: 80%;
+    }
 `;
 
 const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
@@ -130,8 +147,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
     const [isTyping, setIsTyping] = useState(false);
 
     const itemSize = useMemo(() => {
-        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18; // Increased from 0.15 to 0.18
-        return Math.max(baseSize, 120); // Increased minimum size from 100px to 120px
+        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18;
+        return Math.max(baseSize, 120);
     }, [windowSize]);
 
 
@@ -149,7 +166,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
             size={itemSize}
             isLoaded={isLoaded}
         >
-            <Strand />
             <ItemBubble
                 isHovered={isHovered}
                 onMouseEnter={() => setIsHovered(true)}
