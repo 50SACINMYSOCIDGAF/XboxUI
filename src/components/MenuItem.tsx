@@ -102,7 +102,7 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     box-shadow: 0 0 30px rgba(0, 255, 0, 0.7),
     inset 0 0 30px rgba(0, 255, 0, 0.7);
     animation: ${pulseAnimation} 3s ease-in-out infinite;
-    padding: 10px; // Added padding to accommodate larger text
+    aspect-ratio: 1;
 
     &:hover {
         transform: scale(1.1) rotate(5deg);
@@ -111,17 +111,17 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     }
 
     @media (max-width: 768px) {
-        width: 90%;
-        height: 90%;
-        box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
-        inset 0 0 15px rgba(0, 255, 0, 0.5);
+        width: 100%;
+        height: 100%;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.4),
+        inset 0 0 10px rgba(0, 255, 0, 0.4);
     }
 `;
 
 const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
-    font-size: ${props => props.size * 0.18}px; // Increased from 0.12 to 0.18
+    font-size: ${props => props.size * 0.18}px;
     text-transform: lowercase;
     letter-spacing: 1px;
     transition: all 0.3s ease;
@@ -132,7 +132,7 @@ const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean }>`
     animation: ${props => props.isTyping ? css`${typingAnimation} 1s steps(${props.children?.toString().length || 1}, end)` : 'none'};
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.16}px;
+        font-size: ${props => props.size}px;
     }
 `;
 
@@ -151,6 +151,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ label, link, index, randomPosition,
     const [isTyping, setIsTyping] = useState(false);
 
     const itemSize = useMemo(() => {
+        if (windowSize.width <= 768) {
+            return Math.min(windowSize.width, windowSize.height) * 0.15; // Further reduced size for mobile
+        }
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18;
         return Math.max(baseSize, 120);
     }, [windowSize]);

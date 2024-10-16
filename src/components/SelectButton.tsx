@@ -56,6 +56,7 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
     animation: ${pulseAnimation} 3s ease-in-out infinite,
     ${glowAnimation} 5s ease-in-out infinite;
     transition: all 0.3s ease;
+    aspect-ratio: 1;
 
     &:hover {
         background: radial-gradient(
@@ -70,8 +71,10 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
     }
 
     @media (max-width: 768px) {
-        width: 90%;
-        height: 90%;
+        width: 100%;
+        height: 100%;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.4),
+        inset 0 0 10px rgba(0, 255, 0, 0.4);
     }
 `;
 
@@ -96,15 +99,17 @@ const SelectText = styled.span<{ size: number }>`
     line-height: 1.2;
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.14}px; // Reduced font size for mobile
+        font-size: ${props => props.size}px; // Increased from 0.25 to 0.3
     }
-    
 `;
 
 const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
     const [isHovered, setIsHovered] = useState(false);
 
     const buttonSize = useMemo(() => {
+        if (windowSize.width <= 768) {
+            return Math.min(windowSize.width, windowSize.height) * 0.15; // Consistent with MenuItem size
+        }
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.1;
         return Math.max(baseSize, 80);
     }, [windowSize]);

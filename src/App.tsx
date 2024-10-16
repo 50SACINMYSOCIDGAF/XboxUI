@@ -136,15 +136,40 @@ const MobileGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 10px;
-    width: 100%;
-    height: 100%;
+    gap: 15px;
+    width: 85%;
+    max-width: 350px;
+    aspect-ratio: 2 / 3;
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 15px;
+    box-sizing: border-box;
+    z-index: 30;
+`;
+
+const MobileStrandContainer = styled.div`
     position: absolute;
     top: 0;
     left: 0;
-    padding: 20px;
-    box-sizing: border-box;
-    z-index: 30;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+`;
+
+const MobileMessage = styled.div`
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    background-color: rgba(0, 255, 0, 0.2);
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    z-index: 40;
 `;
 
 const DesktopLayout = styled.div`
@@ -186,7 +211,7 @@ interface MenuItemData {
 }
 
 const App: React.FC = () => {
-    const menuItems: MenuItemData[] = [
+    const menuItems = [
         { label: 'GitHub', link: 'https://github.com/50SACINMYSOCIDGAF' },
         { label: 'Email', link: 'mailto:contact@noah.jp.net' },
         { label: 'Blog', link: 'https://medium.com/@noah_44244' },
@@ -197,20 +222,12 @@ const App: React.FC = () => {
     const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
     const [isLoaded, setIsLoaded] = useState(false);
 
-    const randomPositions = useMemo(() => {
-        return menuItems.map(() => generateRandomPosition());
-    }, []);
+    const randomPositions = useMemo(() => menuItems.map(() => Math.floor(Math.random() * (75 - 25 + 1) + 25)), []);
 
     useEffect(() => {
-        const handleResize = () => {
-            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-        };
-
+        const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
-
-        // Set isLoaded to true after a short delay to trigger animations
         const loadTimer = setTimeout(() => setIsLoaded(true), 100);
-
         return () => {
             window.removeEventListener('resize', handleResize);
             clearTimeout(loadTimer);
@@ -221,6 +238,9 @@ const App: React.FC = () => {
     const segmentHeight = windowSize.height;
 
     const isMobile = windowSize.width <= 768;
+    const mobileItemSize = useMemo(() => {
+        return Math.min(windowSize.width, windowSize.height) * 0.20; // Adjust this value as needed, changed to 0.2
+    }, [windowSize]);
 
     return (
         <>
@@ -231,7 +251,6 @@ const App: React.FC = () => {
                 <Particles />
                 <ScanLine />
                 <DigitalDistortion />
-
                 {!isMobile ? (
                     // Desktop layout
                     <>
@@ -267,20 +286,40 @@ const App: React.FC = () => {
                     </>
                 ) : (
                     // Mobile layout
-                    <MobileGrid>
-                        {menuItems.map((item, index) => (
-                            <MenuItem
-                                key={item.label}
-                                label={item.label}
-                                link={item.link}
-                                index={index}
-                                randomPosition={50} // Center all items vertically
-                                windowSize={windowSize}
-                                isLoaded={isLoaded}
+                    <>
+                        <MobileMessage>
+                            This page is not optimized for mobile usage. Please open it on desktop for the full experience.
+                        </MobileMessage>
+                        <MobileStrandContainer>
+                            {menuItems.map((_, index) => (
+                                <StrandSVG key={index}>
+                                    <Strand
+                                        width={windowSize.width}
+                                        height={windowSize.height}
+                                        menuItemY={(index + 1) * (windowSize.height / 6)}
+                                        delay={index * 0.2}
+                                        seed={index * 2}
+                                    />
+                                </StrandSVG>
+                            ))}
+                        </MobileStrandContainer>
+                        <MobileGrid>
+                            {menuItems.map((item, index) => (
+                                <MenuItem
+                                    key={item.label}
+                                    label={item.label}
+                                    link={item.link}
+                                    index={index}
+                                    randomPosition={50}
+                                    windowSize={{ width: mobileItemSize, height: mobileItemSize }}
+                                    isLoaded={isLoaded}
+                                />
+                            ))}
+                            <SelectButton
+                                windowSize={{ width: mobileItemSize, height: mobileItemSize }}
                             />
-                        ))}
-                        <SelectButton windowSize={windowSize} />
-                    </MobileGrid>
+                        </MobileGrid>
+                    </>
                 )}
             </AppContainer>
         </>
