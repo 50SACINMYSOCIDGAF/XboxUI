@@ -231,11 +231,12 @@ const App: React.FC = () => {
 
     const calculateSafeArea = useCallback(() => {
         const maxItemSize = Math.min(windowSize.width, windowSize.height) * 0.18 * 1.5;
+        const glowRadius = maxItemSize * 0.5; // Account for glow effect
         const newSafeArea = {
-            left: maxItemSize / 2,
-            right: windowSize.width - maxItemSize / 2,
-            top: maxItemSize / 2,
-            bottom: windowSize.height - maxItemSize / 2
+            left: maxItemSize + glowRadius,
+            right: windowSize.width - (maxItemSize + glowRadius),
+            top: maxItemSize + glowRadius,
+            bottom: windowSize.height - (maxItemSize + glowRadius)
         };
         setSafeArea(newSafeArea);
     }, [windowSize]);
@@ -246,10 +247,39 @@ const App: React.FC = () => {
 
     const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
         const positions: { x: number; y: number }[] = [];
+        const maxAttempts = 100;
+        const itemRadius = Math.min(windowSize.width, windowSize.height) * 0.18 * 0.75; // Consider the minimum size
+
+        const isColliding = (pos: { x: number; y: number }) => {
+            return positions.some(existingPos => {
+                const dx = pos.x - existingPos.x;
+                const dy = pos.y - existingPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < itemRadius * 2; // Ensure items don't overlap
+            });
+        };
+
         for (let i = 0; i < itemCount; i++) {
-            const x = Math.random() * (safeArea.right - safeArea.left) + safeArea.left;
-            const y = Math.random() * (safeArea.bottom - safeArea.top) + safeArea.top;
-            positions.push({ x: (x / windowSize.width) * 100, y: (y / windowSize.height) * 100 });
+            let attempts = 0;
+            let newPosition;
+
+            do {
+                const x = Math.random() * (safeArea.right - safeArea.left) + safeArea.left;
+                const y = Math.random() * (safeArea.bottom - safeArea.top) + safeArea.top;
+                newPosition = { x, y };
+                attempts++;
+            } while (isColliding(newPosition) && attempts < maxAttempts);
+
+            if (attempts < maxAttempts) {
+                positions.push({
+                    x: (newPosition.x / windowSize.width) * 100,
+                    y: (newPosition.y / windowSize.height) * 100
+                });
+            } else {
+                console.warn(`Could not find non-colliding position for item ${i}`);
+                // Fallback: place item at the center
+                positions.push({ x: 50, y: 50 });
+            }
         }
         return positions;
     }, [safeArea, windowSize]);

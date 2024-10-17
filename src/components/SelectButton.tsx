@@ -27,8 +27,8 @@ const SelectContainer = styled.div<{ size: number }>`
         position: relative;
         bottom: auto;
         right: auto;
-        width: 100%;
-        height: 100%;
+        width: 40vmin; // Ensure consistent size
+        height: 40vmin; // Ensure consistent size
         display: flex;
         justify-content: center;
         align-items: center;
@@ -72,13 +72,15 @@ const SelectBubble = styled.div<{ isHovered: boolean; size: number }>`
     }
 
     @media (max-width: 768px) {
-        width: 100%;
-        height: 100%;
+        width: 40vmin; // Ensure consistent size
+        height: 40vmin; // Ensure consistent size
         box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
         inset 0 0 15px rgba(0, 255, 0, 0.5);
-        /* iOS inflation fix */
         transform: scale(1);
         -webkit-transform: scale(1);
+        &:hover {
+            transform: none;
+        }
     }
 `;
 
@@ -98,12 +100,12 @@ const SelectText = styled.span<{ size: number }>`
     font-size: ${props => props.size * 0.18}px;
     text-transform: lowercase;
     letter-spacing: 1px;
-    text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+    opacity: 0.8;
     text-align: center;
     line-height: 1.2;
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.25}px;
+        font-size: 7vmin; // Ensure consistent size
     }
 `;
 
