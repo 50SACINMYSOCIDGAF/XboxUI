@@ -27,13 +27,11 @@ const SelectContainer = styled.div<{ size: number }>`
         position: relative;
         bottom: auto;
         right: auto;
-        width: ${props => props.size * 3}px;
-        height: ${props => props.size * 3}px;
+        width: 100%;
+        height: 100%;
         display: flex;
         justify-content: center;
         align-items: center;
-        /* iOS inflation fix */
-        transform: scale(1);
         -webkit-transform: scale(1);
     }
 `;
@@ -97,7 +95,7 @@ const SelectLink = styled.a`
 const SelectText = styled.span<{ size: number }>`
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
-    font-size: ${props => props.size * 0.12}px;
+    font-size: ${props => props.size * 0.18}px;
     text-transform: lowercase;
     letter-spacing: 1px;
     text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
@@ -105,7 +103,7 @@ const SelectText = styled.span<{ size: number }>`
     line-height: 1.2;
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.3}px; // Increased from 0.12 to 0.3
+        font-size: ${props => props.size * 0.25}px;
     }
 `;
 
@@ -114,10 +112,10 @@ const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
 
     const buttonSize = useMemo(() => {
         if (windowSize.width <= 768) {
-            return Math.min(windowSize.width, windowSize.height) * 0.3; // Consistent with App.tsx and MenuItem.tsx
+            return Math.min(windowSize.width, windowSize.height) * 0.15; // Reduced from 0.3 to 0.15
         }
-        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.1;
-        return Math.max(baseSize, 80);
+        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.08; // Reduced from 0.1 to 0.08
+        return Math.max(baseSize, 60); // Reduced minimum size from 80 to 60
     }, [windowSize]);
 
     return (

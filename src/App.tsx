@@ -1,10 +1,14 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, {useMemo, useState, useEffect, useCallback} from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import { debounce } from 'lodash';
 import MenuItem from './components/MenuItem';
 import SelectButton from './components/SelectButton';
 import Particles from './components/Particles';
-import ScanLine from './components/ScanLine';
+import moveLeftSound from './MoveLeft.mp3';
+import moveRightSound from './MoveRight.mp3';
+
 import DigitalDistortion from './components/DigitalDistortion';
+import exp from "node:constants";
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -71,8 +75,9 @@ const SegmentContainer = styled.div`
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
+    transform-origin: center bottom;
+    transition: all 0.3s ease-out;
 `;
-
 const strandPulse = keyframes`
     0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
     50% { opacity: 0.5; filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7)); }
@@ -136,19 +141,16 @@ const MobileGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 20px;
-    width: 90%;
-    max-width: 400px;
-    aspect-ratio: 2 / 3;
+    gap: 5vmin;
+    width: 90vw;
+    height: 90vh;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 20px;
+    padding: 5vmin;
     box-sizing: border-box;
     z-index: 30;
-    justify-items: center;
-    align-items: center;
 `;
 
 const MobileStrandContainer = styled.div`
@@ -175,9 +177,9 @@ const MobileMessage = styled.div`
 `;
 
 const DesktopLayout = styled.div`
-  @media (max-width: 768px) {
-    display: none;
-  }
+    @media (max-width: 768px) {
+        display: none;
+    }
 `;
 
 interface StrandProps {
@@ -223,27 +225,92 @@ const App: React.FC = () => {
 
     const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
     const [isLoaded, setIsLoaded] = useState(false);
+    const [selectedItemIndex, setSelectedItemIndex] = useState<number>(0);
 
-    const randomPositions = useMemo(() => menuItems.map(() => Math.floor(Math.random() * (75 - 25 + 1) + 25)), []);
+    const [safeArea, setSafeArea] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+
+    const calculateSafeArea = useCallback(() => {
+        const maxItemSize = Math.min(windowSize.width, windowSize.height) * 0.18 * 1.5;
+        const newSafeArea = {
+            left: maxItemSize / 2,
+            right: windowSize.width - maxItemSize / 2,
+            top: maxItemSize / 2,
+            bottom: windowSize.height - maxItemSize / 2
+        };
+        setSafeArea(newSafeArea);
+    }, [windowSize]);
+
+    useEffect(() => {
+        calculateSafeArea();
+    }, [windowSize, calculateSafeArea]);
+
+    const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
+        const positions: { x: number; y: number }[] = [];
+        for (let i = 0; i < itemCount; i++) {
+            const x = Math.random() * (safeArea.right - safeArea.left) + safeArea.left;
+            const y = Math.random() * (safeArea.bottom - safeArea.top) + safeArea.top;
+            positions.push({ x: (x / windowSize.width) * 100, y: (y / windowSize.height) * 100 });
+        }
+        return positions;
+    }, [safeArea, windowSize]);
+
+    const randomPositions = useMemo(() => generatePositions(menuItems.length), [generatePositions, menuItems.length]);
+
+
+    const leftMoveSound = useMemo(() => new Audio(moveLeftSound), []);
+    const rightMoveSound = useMemo(() => new Audio(moveRightSound), []);
 
     useEffect(() => {
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
         const loadTimer = setTimeout(() => setIsLoaded(true), 100);
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (windowSize.width <= 768) return;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    setSelectedItemIndex((prev) => {
+                        const newIndex = (prev - 1 + menuItems.length) % menuItems.length;
+                        leftMoveSound.currentTime = 0;
+                        leftMoveSound.play();
+                        return newIndex;
+                    });
+                    break;
+                case 'ArrowRight':
+                    setSelectedItemIndex((prev) => {
+                        const newIndex = (prev + 1) % menuItems.length;
+                        rightMoveSound.currentTime = 0;
+                        rightMoveSound.play();
+                        return newIndex;
+                    });
+                    break;
+                case 'Enter':
+                    if (selectedItemIndex !== -1) {
+                        window.open(menuItems[selectedItemIndex].link, '_blank');
+                    }
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
         return () => {
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('keydown', handleKeyDown);
             clearTimeout(loadTimer);
         };
-    }, []);
+    }, [windowSize, menuItems, selectedItemIndex, leftMoveSound, rightMoveSound]);
+
 
     const segmentWidth = windowSize.width / menuItems.length;
     const segmentHeight = windowSize.height;
 
+
     const isMobile = windowSize.width <= 768;
 
     const mobileItemSize = useMemo(() => {
-        // Increase the multiplier for mobile devices
-        return Math.min(windowSize.width, windowSize.height) * 0.3; // Changed from 0.15 to 0.3
+        return Math.min(windowSize.width, windowSize.height) * 0.3;
     }, [windowSize]);
 
     return (
@@ -253,10 +320,8 @@ const App: React.FC = () => {
                 <GridOverlay />
                 <CentralOrb />
                 <Particles />
-                <ScanLine />
                 <DigitalDistortion />
                 {!isMobile ? (
-                    // Desktop layout
                     <>
                         {menuItems.map((item, index) => (
                             <SegmentContainer key={item.label}>
@@ -264,16 +329,16 @@ const App: React.FC = () => {
                                     <Strand
                                         width={segmentWidth}
                                         height={segmentHeight}
-                                        menuItemY={(randomPositions[index] / 100) * segmentHeight}
+                                        menuItemY={(randomPositions[index].y / 100) * segmentHeight}
                                         delay={index * 0.2}
                                         seed={index * 2}
                                     />
                                     <Strand
                                         width={segmentWidth}
                                         height={segmentHeight}
-                                        menuItemY={(randomPositions[index] / 100) * segmentHeight}
-                                        delay={index * 0.2 + 0.1}
-                                        seed={index * 2 + 1}
+                                        menuItemY={(randomPositions[index].y / 100) * segmentHeight}
+                                        delay={index * 0.2}
+                                        seed={index * 2}
                                     />
                                 </StrandSVG>
                                 <MenuItem
@@ -283,13 +348,15 @@ const App: React.FC = () => {
                                     randomPosition={randomPositions[index]}
                                     windowSize={windowSize}
                                     isLoaded={isLoaded}
+                                    isSelected={selectedItemIndex === index}
+                                    position={randomPositions[index]}
+                                    safeArea={safeArea}
                                 />
                             </SegmentContainer>
                         ))}
                         <SelectButton windowSize={windowSize} />
                     </>
                 ) : (
-                    // Mobile layout
                     <>
                         <MobileMessage>
                             This page is not optimized for mobile usage. Please open it on desktop for the full experience.
@@ -314,13 +381,16 @@ const App: React.FC = () => {
                                     label={item.label}
                                     link={item.link}
                                     index={index}
-                                    randomPosition={50}
-                                    windowSize={{ width: mobileItemSize, height: mobileItemSize }}
+                                    randomPosition={{ x: 50, y: 50 }}
+                                    windowSize={windowSize}
                                     isLoaded={isLoaded}
+                                    isSelected={selectedItemIndex === index}
+                                    position={{ x: 50, y: 50 }}
+                                    safeArea={safeArea}
                                 />
                             ))}
                             <SelectButton
-                                windowSize={{ width: mobileItemSize, height: mobileItemSize }}
+                                windowSize={windowSize}
                             />
                         </MobileGrid>
                     </>
