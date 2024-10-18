@@ -12,6 +12,9 @@ interface MenuItemProps {
     isSelected: boolean;
     position: { x: number; y: number };
     safeArea: { left: number; right: number; top: number; bottom: number };
+    onSelect: () => void;
+    isMobile: boolean;
+    mobileSize?: number;
 }
 
 const bobAnimation = keyframes`
@@ -130,8 +133,8 @@ const ItemBubble = styled.div<ItemBubbleProps>`
     transition: all 0.3s ease, transform 0.5s ease;
     cursor: pointer;
     box-shadow: ${props => props.isSelected
-    ? '0 0 50px rgba(0, 255, 0, 0.9), inset 0 0 50px rgba(0, 255, 0, 0.9)'
-    : '0 0 30px rgba(0, 255, 0, 0.7), inset 0 0 30px rgba(0, 255, 0, 0.7)'};
+            ? '0 0 50px rgba(0, 255, 0, 0.9), inset 0 0 50px rgba(0, 255, 0, 0.9)'
+            : '0 0 30px rgba(0, 255, 0, 0.7), inset 0 0 30px rgba(0, 255, 0, 0.7)'};
     animation: ${pulseAnimation} 3s ease-in-out infinite;
     aspect-ratio: 1;
 
@@ -165,10 +168,13 @@ const ItemText = styled.span<ItemBubbleProps & { isTyping: boolean; isSelected: 
     opacity: ${props => props.isHovered || props.isSelected ? 1 : 0.8};
     overflow: hidden;
     white-space: nowrap;
-    animation: ${props => props.isTyping ? css`${typingAnimation} 1s steps(${props.children?.toString().length || 1}, end)` : 'none'};
+    display: inline-block;
+    text-align: center;
+    width: ${props => props.isTyping ? '100%' : '0'};
+    animation: ${props => props.isTyping ? css`${typingAnimation} 0.5s steps(${props.children?.toString().length || 1}, end) forwards` : 'none'};
 
     @media (max-width: 768px) {
-        font-size: ${props => props.size * 0.3}px;
+        font-size: ${props => props.size * 0.25}px;
     }
 `;
 
@@ -194,32 +200,47 @@ const MenuItem: React.FC<MenuItemProps> = ({
                                                windowSize,
                                                isLoaded,
                                                isSelected,
-                                               safeArea
+                                               safeArea,
+                                               onSelect,
+                                               isMobile,
+                                               mobileSize
                                            }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
 
     const itemSize = useMemo(() => {
+        if (isMobile && mobileSize) {
+            return mobileSize;
+        }
         if (windowSize.width <= 768) {
             return Math.min(windowSize.width, windowSize.height) * 0.2;
         }
         const baseSize = Math.min(windowSize.width, windowSize.height) * 0.18;
         return Math.max(baseSize, 120);
-    }, [windowSize]);
+    }, [windowSize, isMobile, mobileSize]);
 
     useEffect(() => {
         if (isLoaded) {
-            const typingTimeout = setTimeout(() => setIsTyping(true), index * 500);
+            const typingTimeout = setTimeout(() => setIsTyping(true), index * 100 + 200);
             return () => clearTimeout(typingTimeout);
+        } else {
+            setIsTyping(false);
         }
     }, [isLoaded, index]);
 
     const adjustedPosition = useMemo(() => {
-        const maxSize = itemSize * (isSelected ? 1.5 : 1);
+        const scaleFactor = isSelected ? 1.5 : 1;
+        const maxSize = itemSize * scaleFactor;
         const x = Math.max(safeArea.left, Math.min(safeArea.right - maxSize, randomPosition.x * windowSize.width / 100));
         const y = Math.max(safeArea.top, Math.min(safeArea.bottom - maxSize, randomPosition.y * windowSize.height / 100));
         return { x: (x / windowSize.width) * 100, y: (y / windowSize.height) * 100 };
     }, [randomPosition, windowSize, safeArea, itemSize, isSelected]);
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        onSelect();
+        window.open(link, '_blank');
+    };
 
     return (
         <AnimatedWrapper position={adjustedPosition} isLoaded={isLoaded}>
@@ -231,7 +252,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
                     size={itemSize}
                     isSelected={isSelected}
                 >
-                    <ItemLink href={link} target="_blank" rel="noopener noreferrer">
+                    <ItemLink href={link} onClick={handleClick} target="_blank" rel="noopener noreferrer">
                         <ItemText
                             isHovered={isHovered}
                             size={itemSize}

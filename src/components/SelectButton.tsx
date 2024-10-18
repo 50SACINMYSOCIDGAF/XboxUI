@@ -3,6 +3,8 @@ import styled, { keyframes } from 'styled-components';
 
 interface SelectButtonProps {
     windowSize: { width: number; height: number };
+    isMobile: boolean;
+    mobileSize?: number;
 }
 
 const pulseAnimation = keyframes`
@@ -109,16 +111,19 @@ const SelectText = styled.span<{ size: number }>`
     }
 `;
 
-const SelectButton: React.FC<SelectButtonProps> = ({ windowSize }) => {
+const SelectButton: React.FC<SelectButtonProps> = ({ windowSize, isMobile, mobileSize }) => {
     const [isHovered, setIsHovered] = useState(false);
 
     const buttonSize = useMemo(() => {
-        if (windowSize.width <= 768) {
-            return Math.min(windowSize.width, windowSize.height) * 0.15; // Reduced from 0.3 to 0.15
+        if (isMobile && mobileSize) {
+            return mobileSize;
         }
-        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.08; // Reduced from 0.1 to 0.08
-        return Math.max(baseSize, 60); // Reduced minimum size from 80 to 60
-    }, [windowSize]);
+        if (windowSize.width <= 768) {
+            return Math.min(windowSize.width, windowSize.height) * 0.15;
+        }
+        const baseSize = Math.min(windowSize.width, windowSize.height) * 0.08;
+        return Math.max(baseSize, 60);
+    }, [windowSize, isMobile, mobileSize]);
 
     return (
         <SelectContainer size={buttonSize}>

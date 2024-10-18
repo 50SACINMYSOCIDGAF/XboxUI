@@ -22,6 +22,21 @@ const GlobalStyle = createGlobalStyle`
     }
 `;
 
+
+const NavigationHint = styled.div`
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  color: rgba(0, 255, 0, 0.5);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+
 const backgroundPulse = keyframes`
     0%, 100% { background-color: #001200; }
     50% { background-color: #002200; }
@@ -141,16 +156,27 @@ const MobileGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 5vmin;
-    width: 90vw;
-    height: 90vh;
+    gap: 10px;
+    width: 90%;
+    height: 90%;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 5vmin;
+    padding: 10px;
     box-sizing: border-box;
     z-index: 30;
+`;
+
+const MobileContainer = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 `;
 
 const MobileStrandContainer = styled.div`
@@ -164,16 +190,15 @@ const MobileStrandContainer = styled.div`
 
 const MobileMessage = styled.div`
     position: absolute;
-    top: 20px;
-    left: 20px;
-    right: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
     background-color: rgba(0, 255, 0, 0.2);
     color: #ffffff;
     padding: 10px;
-    border-radius: 5px;
-    font-size: 14px;
+    font-size: 12px;
     text-align: center;
-    z-index: 40;
+    z-index: 50;
 `;
 
 const DesktopLayout = styled.div`
@@ -209,6 +234,56 @@ const Strand: React.FC<StrandProps> = ({ width, height, menuItemY, delay, seed }
     return <StrandPath d={path} delay={delay} />;
 };
 
+const cablePulse = keyframes`
+    0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
+    50% { opacity: 0.5; filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7)); }
+`;
+
+const CableSVG = styled.svg`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+`;
+
+const CablePath = styled.path<{ delay: number }>`
+    fill: none;
+    stroke: rgba(0, 255, 0, 0.4);
+    stroke-width: 2px;
+    animation: ${cablePulse} ${props => 4 + props.delay}s ease-in-out infinite;
+    animation-delay: ${props => props.delay}s;
+`;
+
+interface CableProps {
+    startX: number;
+    endX: number;
+    endY: number;
+    delay: number;
+    isSelected: boolean;
+}
+
+const Cable: React.FC<CableProps> = ({ startX, endX, endY, delay, isSelected }) => {
+    const path = useMemo(() => {
+        const midY = endY * 0.4;
+        const controlPoint1 = { x: startX, y: midY };
+        const controlPoint2 = { x: endX, y: midY };
+        return `M ${startX} 0 C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${endX} ${endY}`;
+    }, [startX, endX, endY]);
+
+    return (
+        <CablePath
+            d={path}
+            delay={delay}
+            style={{
+                strokeWidth: isSelected ? '3px' : '2px',
+                filter: isSelected ? 'drop-shadow(0 0 10px rgba(0, 255, 0, 0.8))' : 'none'
+            }}
+        />
+    );
+};
+
 interface MenuItemData {
     label: string;
     link: string;
@@ -224,14 +299,29 @@ const App: React.FC = () => {
     ];
 
     const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const [isLoaded, setIsLoaded] = useState(false);
     const [selectedItemIndex, setSelectedItemIndex] = useState<number>(0);
 
     const [safeArea, setSafeArea] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
 
+    const [itemPositions, setItemPositions] = useState<{ x: number; y: number }[]>([]);
+
     const calculateSafeArea = useCallback(() => {
-        const maxItemSize = Math.min(windowSize.width, windowSize.height) * 0.18 * 1.5;
-        const glowRadius = maxItemSize * 0.5; // Account for glow effect
+        const maxItemSize = Math.min(windowSize.width, windowSize.height) * 0.18 * 1.5 * 1.5; // Account for selection scaling
+        const glowRadius = maxItemSize * 0.5;
         const newSafeArea = {
             left: maxItemSize + glowRadius,
             right: windowSize.width - (maxItemSize + glowRadius),
@@ -241,48 +331,81 @@ const App: React.FC = () => {
         setSafeArea(newSafeArea);
     }, [windowSize]);
 
+    const repositionItems = useCallback((selectedIndex: number) => {
+        setItemPositions(prevPositions => {
+            const newPositions = [...prevPositions];
+            const selectedItem = newPositions[selectedIndex];
+            const scaleFactor = 1.5; // Scale factor for selected item
+
+            // Check if selected item is outside safe area
+            if (selectedItem.x < safeArea.left / windowSize.width * 100) {
+                const diff = safeArea.left / windowSize.width * 100 - selectedItem.x;
+                newPositions.forEach((pos, index) => {
+                    pos.x += diff + (index === selectedIndex ? 0 : scaleFactor * 5);
+                });
+            } else if (selectedItem.x > safeArea.right / windowSize.width * 100) {
+                const diff = selectedItem.x - safeArea.right / windowSize.width * 100;
+                newPositions.forEach((pos, index) => {
+                    pos.x -= diff + (index === selectedIndex ? 0 : scaleFactor * 5);
+                });
+            }
+
+            return newPositions;
+        });
+    }, [safeArea, windowSize]);
+
     useEffect(() => {
         calculateSafeArea();
     }, [windowSize, calculateSafeArea]);
 
-    const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
-        const positions: { x: number; y: number }[] = [];
-        const maxAttempts = 100;
-        const itemRadius = Math.min(windowSize.width, windowSize.height) * 0.18 * 0.75; // Consider the minimum size
+        const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
+            const positions: { x: number; y: number }[] = [];
+            const maxAttempts = 100;
+            const itemRadius = Math.min(windowSize.width, windowSize.height) * 0.18 * 0.75 * 1.5; // Consider the maximum size (selected)
 
-        const isColliding = (pos: { x: number; y: number }) => {
-            return positions.some(existingPos => {
-                const dx = pos.x - existingPos.x;
-                const dy = pos.y - existingPos.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                return distance < itemRadius * 2; // Ensure items don't overlap
-            });
-        };
-
-        for (let i = 0; i < itemCount; i++) {
-            let attempts = 0;
-            let newPosition;
-
-            do {
-                const x = Math.random() * (safeArea.right - safeArea.left) + safeArea.left;
-                const y = Math.random() * (safeArea.bottom - safeArea.top) + safeArea.top;
-                newPosition = { x, y };
-                attempts++;
-            } while (isColliding(newPosition) && attempts < maxAttempts);
-
-            if (attempts < maxAttempts) {
-                positions.push({
-                    x: (newPosition.x / windowSize.width) * 100,
-                    y: (newPosition.y / windowSize.height) * 100
+            const isColliding = (pos: { x: number; y: number }) => {
+                return positions.some(existingPos => {
+                    const dx = pos.x - existingPos.x;
+                    const dy = pos.y - existingPos.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    return distance < itemRadius * 2; // Ensure items don't overlap
                 });
-            } else {
-                console.warn(`Could not find non-colliding position for item ${i}`);
-                // Fallback: place item at the center
-                positions.push({ x: 50, y: 50 });
+            };
+
+            const isWithinSafeArea = (pos: { x: number; y: number }) => {
+                return pos.x >= safeArea.left &&
+                    pos.x <= safeArea.right - itemRadius * 2 &&
+                    pos.y >= safeArea.top &&
+                    pos.y <= safeArea.bottom - itemRadius * 2;
+            };
+
+            for (let i = 0; i < itemCount; i++) {
+                let attempts = 0;
+                let newPosition;
+
+                do {
+                    const x = Math.random() * (safeArea.right - safeArea.left - itemRadius * 2) + safeArea.left;
+                    const y = Math.random() * (safeArea.bottom - safeArea.top - itemRadius * 2) + safeArea.top;
+                    newPosition = { x, y };
+                    attempts++;
+                } while ((isColliding(newPosition) || !isWithinSafeArea(newPosition)) && attempts < maxAttempts);
+
+                if (attempts < maxAttempts) {
+                    positions.push({
+                        x: (newPosition.x / windowSize.width) * 100,
+                        y: (newPosition.y / windowSize.height) * 100
+                    });
+                } else {
+                    console.warn(`Could not find non-colliding position for item ${i}`);
+                    // Fallback: place item at the center of the safe area
+                    positions.push({
+                        x: ((safeArea.left + safeArea.right) / 2 / windowSize.width) * 100,
+                        y: ((safeArea.top + safeArea.bottom) / 2 / windowSize.height) * 100
+                    });
+                }
             }
-        }
-        return positions;
-    }, [safeArea, windowSize]);
+            return positions;
+        }, [safeArea, windowSize]);
 
     const randomPositions = useMemo(() => generatePositions(menuItems.length), [generatePositions, menuItems.length]);
 
@@ -291,10 +414,6 @@ const App: React.FC = () => {
     const rightMoveSound = useMemo(() => new Audio(moveRightSound), []);
 
     useEffect(() => {
-        const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-        window.addEventListener('resize', handleResize);
-        const loadTimer = setTimeout(() => setIsLoaded(true), 100);
-
         const handleKeyDown = (event: KeyboardEvent) => {
             if (windowSize.width <= 768) return;
 
@@ -304,6 +423,7 @@ const App: React.FC = () => {
                         const newIndex = (prev - 1 + menuItems.length) % menuItems.length;
                         leftMoveSound.currentTime = 0;
                         leftMoveSound.play();
+                        repositionItems(newIndex);
                         return newIndex;
                     });
                     break;
@@ -312,6 +432,7 @@ const App: React.FC = () => {
                         const newIndex = (prev + 1) % menuItems.length;
                         rightMoveSound.currentTime = 0;
                         rightMoveSound.play();
+                        repositionItems(newIndex);
                         return newIndex;
                     });
                     break;
@@ -326,11 +447,9 @@ const App: React.FC = () => {
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
             window.removeEventListener('keydown', handleKeyDown);
-            clearTimeout(loadTimer);
         };
-    }, [windowSize, menuItems, selectedItemIndex, leftMoveSound, rightMoveSound]);
+    }, [windowSize, menuItems, selectedItemIndex, leftMoveSound, rightMoveSound, repositionItems]);
 
 
     const segmentWidth = windowSize.width / menuItems.length;
@@ -339,8 +458,20 @@ const App: React.FC = () => {
 
     const isMobile = windowSize.width <= 768;
 
+    useEffect(() => {
+        const positions = generatePositions(menuItems.length);
+        setItemPositions(positions);
+    }, [generatePositions, menuItems.length, windowSize]);
+
+    useEffect(() => {
+        const loadTimer = setTimeout(() => setIsLoaded(true), 100);
+        return () => clearTimeout(loadTimer);
+    }, []);
+
+
     const mobileItemSize = useMemo(() => {
-        return Math.min(windowSize.width, windowSize.height) * 0.3;
+        const gridSize = Math.min(windowSize.width * 0.9, windowSize.height * 0.8);
+        return gridSize / 2 - 20; // Accounting for gap and padding
     }, [windowSize]);
 
     return (
@@ -372,6 +503,7 @@ const App: React.FC = () => {
                                     />
                                 </StrandSVG>
                                 <MenuItem
+                                    key={item.label}
                                     label={item.label}
                                     link={item.link}
                                     index={index}
@@ -381,48 +513,65 @@ const App: React.FC = () => {
                                     isSelected={selectedItemIndex === index}
                                     position={randomPositions[index]}
                                     safeArea={safeArea}
+                                    onSelect={() => setSelectedItemIndex(index)}
+                                    isMobile={false}
                                 />
                             </SegmentContainer>
                         ))}
-                        <SelectButton windowSize={windowSize} />
+                        <SelectButton
+                            windowSize={windowSize}
+                            isMobile={false}
+                        />
+                        <NavigationHint>
+                            Use ← → to navigate, Enter to select
+                        </NavigationHint>
                     </>
                 ) : (
                     <>
-                        <MobileMessage>
-                            This page is not optimized for mobile usage. Please open it on desktop for the full experience.
-                        </MobileMessage>
-                        <MobileStrandContainer>
-                            {menuItems.map((_, index) => (
-                                <StrandSVG key={index}>
-                                    <Strand
-                                        width={windowSize.width}
-                                        height={windowSize.height}
-                                        menuItemY={(index + 1) * (windowSize.height / 6)}
-                                        delay={index * 0.2}
-                                        seed={index * 2}
+                        {isMobile && (
+                            <MobileContainer>
+                                <MobileMessage>
+                                    This page is not optimized for mobile usage. Please open it on desktop for the full experience.
+                                </MobileMessage>
+                                <MobileStrandContainer>
+                                    {menuItems.map((_, index) => (
+                                        <StrandSVG key={index}>
+                                            <Strand
+                                                width={windowSize.width}
+                                                height={windowSize.height}
+                                                menuItemY={(index + 1) * (windowSize.height / 6)}
+                                                delay={index * 0.2}
+                                                seed={index * 2}
+                                            />
+                                        </StrandSVG>
+                                    ))}
+                                </MobileStrandContainer>
+                                <MobileGrid>
+                                    {menuItems.map((item, index) => (
+                                        <MenuItem
+                                            key={item.label}
+                                            label={item.label}
+                                            link={item.link}
+                                            index={index}
+                                            randomPosition={{ x: 50, y: 50 }}
+                                            windowSize={windowSize}
+                                            isLoaded={isLoaded}
+                                            isSelected={selectedItemIndex === index}
+                                            position={{ x: 50, y: 50 }}
+                                            safeArea={safeArea}
+                                            onSelect={() => setSelectedItemIndex(index)}
+                                            isMobile={true}
+                                            mobileSize={mobileItemSize}
+                                        />
+                                    ))}
+                                    <SelectButton
+                                        windowSize={windowSize}
+                                        isMobile={true}
+                                        mobileSize={mobileItemSize}
                                     />
-                                </StrandSVG>
-                            ))}
-                        </MobileStrandContainer>
-                        <MobileGrid>
-                            {menuItems.map((item, index) => (
-                                <MenuItem
-                                    key={item.label}
-                                    label={item.label}
-                                    link={item.link}
-                                    index={index}
-                                    randomPosition={{ x: 50, y: 50 }}
-                                    windowSize={windowSize}
-                                    isLoaded={isLoaded}
-                                    isSelected={selectedItemIndex === index}
-                                    position={{ x: 50, y: 50 }}
-                                    safeArea={safeArea}
-                                />
-                            ))}
-                            <SelectButton
-                                windowSize={windowSize}
-                            />
-                        </MobileGrid>
+                                </MobileGrid>
+                            </MobileContainer>
+                        )}
                     </>
                 )}
             </AppContainer>
