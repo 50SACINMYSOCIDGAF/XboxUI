@@ -1,14 +1,13 @@
-import React, {useMemo, useState, useEffect, useCallback} from 'react';
-import styled, { createGlobalStyle, keyframes } from 'styled-components';
-import { debounce } from 'lodash';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import styled, {createGlobalStyle, keyframes} from 'styled-components';
 import MenuItem from './components/MenuItem';
 import SelectButton from './components/SelectButton';
 import Particles from './components/Particles';
 import moveLeftSound from './MoveLeft.mp3';
 import moveRightSound from './MoveRight.mp3';
 
+
 import DigitalDistortion from './components/DigitalDistortion';
-import exp from "node:constants";
 
 const GlobalStyle = createGlobalStyle`
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -24,30 +23,71 @@ const GlobalStyle = createGlobalStyle`
 
 
 const NavigationHint = styled.div`
-  position: fixed;
-  bottom: 10px;
-  left: 10px;
-  color: rgba(0, 255, 0, 0.5);
-  font-size: 12px;
-  pointer-events: none;
-  z-index: 1000;
-  @media (max-width: 768px) {
-    display: none;
-  }
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: rgba(0, 255, 0, 0.5);
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    @media (max-width: 768px) {
+        display: none;
+    }
 `;
 
+const TitleContainer = styled.div`
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+`;
+
+const Title = styled.h1`
+    font-size: 3rem;
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    margin-bottom: 0.5rem;
+`;
+
+const Subtitle = styled.h2`
+    font-size: 1.5rem;
+    color: rgba(0, 255, 0, 0.8);
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    max-width: 600px;
+    margin: 0 auto;
+`;
+
+const InspirationText = styled.p`
+    font-size: 1rem;
+    color: rgba(0, 255, 0, 0.6);
+    margin-top: 1rem;
+
+    a {
+        color: rgba(0, 255, 0, 0.8);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+`;
 
 const backgroundPulse = keyframes`
-    0%, 100% { background-color: #001200; }
-    50% { background-color: #002200; }
+    0%, 100% {
+        background-color: #001200;
+    }
+    50% {
+        background-color: #002200;
+    }
 `;
 
 const AppContainer = styled.div`
     width: 100vw;
     height: 100vh;
-    background-image:
-            radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 70%),
-            linear-gradient(0deg, rgba(0, 50, 0, 0.2) 0%, transparent 100%);
+    background-image: radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 70%),
+    linear-gradient(0deg, rgba(0, 50, 0, 0.2) 0%, transparent 100%);
     animation: ${backgroundPulse} 8s ease-in-out infinite;
     display: flex;
     justify-content: space-around;
@@ -62,9 +102,8 @@ const GridOverlay = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-image:
-            linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
     background-size: 50px 50px;
     pointer-events: none;
 `;
@@ -94,8 +133,14 @@ const SegmentContainer = styled.div`
     transition: all 0.3s ease-out;
 `;
 const strandPulse = keyframes`
-    0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
-    50% { opacity: 0.5; filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7)); }
+    0%, 100% {
+        opacity: 0.3;
+        filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5));
+    }
+    50% {
+        opacity: 0.5;
+        filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7));
+    }
 `;
 
 const StrandSVG = styled.svg`
@@ -123,17 +168,13 @@ const SEGMENTS = 100;
 const INFLUENCE_RADIUS = 200;
 const INFLUENCE_STRENGTH = 0.5;
 
-const generateRandomPosition = () => {
-    return Math.floor(Math.random() * (75 - 25 + 1) + 25);
-};
-
 const generateControlPoints = (width: number, height: number, segments: number, seed: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i <= segments; i++) {
         const t = i / segments;
         const x = width * 0.5 + Math.sin(t * Math.PI * 2 + seed) * (width * 0.4);
         const y = height * t;
-        points.push({ x, y });
+        points.push({x, y});
     }
     return points;
 };
@@ -151,7 +192,6 @@ const applyMenuItemInfluence = (point: Point, menuItem: { x: number; y: number }
     }
     return point;
 };
-
 const MobileGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -200,13 +240,6 @@ const MobileMessage = styled.div`
     text-align: center;
     z-index: 50;
 `;
-
-const DesktopLayout = styled.div`
-    @media (max-width: 768px) {
-        display: none;
-    }
-`;
-
 interface StrandProps {
     width: number;
     height: number;
@@ -215,10 +248,10 @@ interface StrandProps {
     seed: number;
 }
 
-const Strand: React.FC<StrandProps> = ({ width, height, menuItemY, delay, seed }) => {
+const Strand: React.FC<StrandProps> = ({width, height, menuItemY, delay, seed}) => {
     const points = useMemo(() => {
         const basePoints = generateControlPoints(width, height, SEGMENTS, seed);
-        return basePoints.map(point => applyMenuItemInfluence(point, { x: width / 2, y: menuItemY }, INFLUENCE_STRENGTH));
+        return basePoints.map(point => applyMenuItemInfluence(point, {x: width / 2, y: menuItemY}, INFLUENCE_STRENGTH));
     }, [width, height, menuItemY, seed]);
 
     const path = useMemo(() => {
@@ -231,78 +264,22 @@ const Strand: React.FC<StrandProps> = ({ width, height, menuItemY, delay, seed }
             }).join(' ');
     }, [points]);
 
-    return <StrandPath d={path} delay={delay} />;
+    return <StrandPath d={path} delay={delay}/>;
 };
-
-const cablePulse = keyframes`
-    0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
-    50% { opacity: 0.5; filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.7)); }
-`;
-
-const CableSVG = styled.svg`
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-`;
-
-const CablePath = styled.path<{ delay: number }>`
-    fill: none;
-    stroke: rgba(0, 255, 0, 0.4);
-    stroke-width: 2px;
-    animation: ${cablePulse} ${props => 4 + props.delay}s ease-in-out infinite;
-    animation-delay: ${props => props.delay}s;
-`;
-
-interface CableProps {
-    startX: number;
-    endX: number;
-    endY: number;
-    delay: number;
-    isSelected: boolean;
-}
-
-const Cable: React.FC<CableProps> = ({ startX, endX, endY, delay, isSelected }) => {
-    const path = useMemo(() => {
-        const midY = endY * 0.4;
-        const controlPoint1 = { x: startX, y: midY };
-        const controlPoint2 = { x: endX, y: midY };
-        return `M ${startX} 0 C ${controlPoint1.x} ${controlPoint1.y}, ${controlPoint2.x} ${controlPoint2.y}, ${endX} ${endY}`;
-    }, [startX, endX, endY]);
-
-    return (
-        <CablePath
-            d={path}
-            delay={delay}
-            style={{
-                strokeWidth: isSelected ? '3px' : '2px',
-                filter: isSelected ? 'drop-shadow(0 0 10px rgba(0, 255, 0, 0.8))' : 'none'
-            }}
-        />
-    );
-};
-
-interface MenuItemData {
-    label: string;
-    link: string;
-}
-
 const App: React.FC = () => {
     const menuItems = [
-        { label: 'GitHub', link: 'https://github.com/50SACINMYSOCIDGAF' },
-        { label: 'Email', link: 'mailto:contact@noah.jp.net' },
-        { label: 'Blog', link: 'https://medium.com/@noah_44244' },
-        { label: 'Discord', link: 'https://discordlookup.com/user/1106369952501481534' },
-        { label: 'Portfolio', link: 'https://noah.jp.net/portfolio/' }
+        {label: 'GitHub', link: 'https://github.com/50SACINMYSOCIDGAF'},
+        {label: 'Email', link: 'mailto:contact@noah.jp.net'},
+        {label: 'Blog', link: 'https://medium.com/@noah_44244'},
+        {label: 'Discord', link: 'https://discordlookup.com/user/1106369952501481534'},
+        {label: 'Portfolio', link: 'https://noah.jp.net/portfolio/'}
     ];
 
-    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const [windowSize, setWindowSize] = useState({width: window.innerWidth, height: window.innerHeight});
 
     useEffect(() => {
         const handleResize = () => {
-            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+            setWindowSize({width: window.innerWidth, height: window.innerHeight});
         };
 
         window.addEventListener('resize', handleResize);
@@ -315,9 +292,12 @@ const App: React.FC = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [selectedItemIndex, setSelectedItemIndex] = useState<number>(0);
 
-    const [safeArea, setSafeArea] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+    const [safeArea, setSafeArea] = useState({left: 0, right: 0, top: 0, bottom: 0});
 
-    const [itemPositions, setItemPositions] = useState<{ x: number; y: number }[]>([]);
+    const [, setItemPositions] = useState<{ x: number; y: number }[]>([]);
+
+
+
 
     const calculateSafeArea = useCallback(() => {
         const maxItemSize = Math.min(windowSize.width, windowSize.height) * 0.18 * 1.5 * 1.5; // Account for selection scaling
@@ -358,54 +338,54 @@ const App: React.FC = () => {
         calculateSafeArea();
     }, [windowSize, calculateSafeArea]);
 
-        const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
-            const positions: { x: number; y: number }[] = [];
-            const maxAttempts = 100;
-            const itemRadius = Math.min(windowSize.width, windowSize.height) * 0.18 * 0.75 * 1.5; // Consider the maximum size (selected)
+    const generatePositions = useCallback((itemCount: number): { x: number; y: number }[] => {
+        const positions: { x: number; y: number }[] = [];
+        const maxAttempts = 100;
+        const itemRadius = Math.min(windowSize.width, windowSize.height) * 0.18 * 0.75 * 1.5; // Consider the maximum size (selected)
 
-            const isColliding = (pos: { x: number; y: number }) => {
-                return positions.some(existingPos => {
-                    const dx = pos.x - existingPos.x;
-                    const dy = pos.y - existingPos.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    return distance < itemRadius * 2; // Ensure items don't overlap
+        const isColliding = (pos: { x: number; y: number }) => {
+            return positions.some(existingPos => {
+                const dx = pos.x - existingPos.x;
+                const dy = pos.y - existingPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < itemRadius * 2; // Ensure items don't overlap
+            });
+        };
+
+        const isWithinSafeArea = (pos: { x: number; y: number }) => {
+            return pos.x >= safeArea.left &&
+                pos.x <= safeArea.right - itemRadius * 2 &&
+                pos.y >= safeArea.top &&
+                pos.y <= safeArea.bottom - itemRadius * 2;
+        };
+
+        for (let i = 0; i < itemCount; i++) {
+            let attempts = 0;
+            let newPosition;
+
+            do {
+                const x = Math.random() * (safeArea.right - safeArea.left - itemRadius * 2) + safeArea.left;
+                const y = Math.random() * (safeArea.bottom - safeArea.top - itemRadius * 2) + safeArea.top;
+                newPosition = {x, y};
+                attempts++;
+            } while ((isColliding(newPosition) || !isWithinSafeArea(newPosition)) && attempts < maxAttempts);
+
+            if (attempts < maxAttempts) {
+                positions.push({
+                    x: (newPosition.x / windowSize.width) * 100,
+                    y: (newPosition.y / windowSize.height) * 100
                 });
-            };
-
-            const isWithinSafeArea = (pos: { x: number; y: number }) => {
-                return pos.x >= safeArea.left &&
-                    pos.x <= safeArea.right - itemRadius * 2 &&
-                    pos.y >= safeArea.top &&
-                    pos.y <= safeArea.bottom - itemRadius * 2;
-            };
-
-            for (let i = 0; i < itemCount; i++) {
-                let attempts = 0;
-                let newPosition;
-
-                do {
-                    const x = Math.random() * (safeArea.right - safeArea.left - itemRadius * 2) + safeArea.left;
-                    const y = Math.random() * (safeArea.bottom - safeArea.top - itemRadius * 2) + safeArea.top;
-                    newPosition = { x, y };
-                    attempts++;
-                } while ((isColliding(newPosition) || !isWithinSafeArea(newPosition)) && attempts < maxAttempts);
-
-                if (attempts < maxAttempts) {
-                    positions.push({
-                        x: (newPosition.x / windowSize.width) * 100,
-                        y: (newPosition.y / windowSize.height) * 100
-                    });
-                } else {
-                    console.warn(`Could not find non-colliding position for item ${i}`);
-                    // Fallback: place item at the center of the safe area
-                    positions.push({
-                        x: ((safeArea.left + safeArea.right) / 2 / windowSize.width) * 100,
-                        y: ((safeArea.top + safeArea.bottom) / 2 / windowSize.height) * 100
-                    });
-                }
+            } else {
+                console.warn(`Could not find non-colliding position for item ${i}`);
+                // Fallback: place item at the center of the safe area
+                positions.push({
+                    x: ((safeArea.left + safeArea.right) / 2 / windowSize.width) * 100,
+                    y: ((safeArea.top + safeArea.bottom) / 2 / windowSize.height) * 100
+                });
             }
-            return positions;
-        }, [safeArea, windowSize]);
+        }
+        return positions;
+    }, [safeArea, windowSize]);
 
     const randomPositions = useMemo(() => generatePositions(menuItems.length), [generatePositions, menuItems.length]);
 
@@ -476,14 +456,25 @@ const App: React.FC = () => {
 
     return (
         <>
-            <GlobalStyle />
+            <GlobalStyle/>
             <AppContainer>
-                <GridOverlay />
-                <CentralOrb />
-                <Particles />
-                <DigitalDistortion />
+                <GridOverlay/>
+                <CentralOrb/>
+                <Particles/>
+                <DigitalDistortion/>
                 {!isMobile ? (
                     <>
+                        <TitleContainer>
+                            <Title>Hello, I'm Noah</Title>
+                            <Subtitle>
+                                Fullstack developer proficient in C++, Python, classic HTML stacks, and TypeScript/React
+                            </Subtitle>
+                            <InspirationText>
+                                This page design was inspired by <a
+                                href="https://cdn.myportfolio.com/79d316ac2b8fe8cbe1561983ea196dfe/83d36949-eb47-49f1-aad0-226b5685b590_rw_1200.jpg?h=149bd7aecf03ec3c8bfdf127aad86455"
+                                target="_blank" rel="noopener noreferrer">the original Xbox ui.</a>
+                            </InspirationText>
+                        </TitleContainer>
                         {menuItems.map((item, index) => (
                             <SegmentContainer key={item.label}>
                                 <StrandSVG>
@@ -531,7 +522,8 @@ const App: React.FC = () => {
                         {isMobile && (
                             <MobileContainer>
                                 <MobileMessage>
-                                    This page is not optimized for mobile usage. Please open it on desktop for the full experience.
+                                    This page is not optimized for mobile usage. Please open it on desktop for the full
+                                    experience.
                                 </MobileMessage>
                                 <MobileStrandContainer>
                                     {menuItems.map((_, index) => (
@@ -553,11 +545,11 @@ const App: React.FC = () => {
                                             label={item.label}
                                             link={item.link}
                                             index={index}
-                                            randomPosition={{ x: 50, y: 50 }}
+                                            randomPosition={{x: 50, y: 50}}
                                             windowSize={windowSize}
                                             isLoaded={isLoaded}
                                             isSelected={selectedItemIndex === index}
-                                            position={{ x: 50, y: 50 }}
+                                            position={{x: 50, y: 50}}
                                             safeArea={safeArea}
                                             onSelect={() => setSelectedItemIndex(index)}
                                             isMobile={true}
